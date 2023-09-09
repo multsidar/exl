@@ -1,0 +1,237 @@
+unit Unit1;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  Classes,windows, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, StdCtrls,
+  ExtCtrls, ColorBox, TAGraph,TASeries,messages,variants;
+
+type
+
+  { TForm1 }
+
+  TForm1 = class(TForm)
+    Button1: TButton;
+    Button2: TButton;
+    Button3: TButton;
+    Button4: TButton;
+    Button5: TButton;
+    Button6: TButton;
+    Chart1: TChart;
+    Chart1LineSeries1: TLineSeries;
+    Chart1LineSeries2: TLineSeries;
+    Chart1LineSeries3: TLineSeries;
+    Edit1: TEdit;
+    Edit2: TEdit;
+    Label1: TLabel;
+    OpenDialog1: TOpenDialog;
+    SaveDialog1: TSaveDialog;
+    Shape1: TShape;
+    Shape2: TShape;
+    Shape3: TShape;
+    StringGrid1: TStringGrid;
+    procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
+    procedure Button6Click(Sender: TObject);
+
+    procedure FormCreate(Sender: TObject);
+
+  private
+
+  public
+   Fname:string;
+   AppDir:string;
+   UserDir:string;
+  end;
+
+var
+  Form1: TForm1;
+
+implementation
+
+{$R *.lfm}
+
+{ TForm1 }
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  shape1.Brush.Color:=clBlack;
+  shape2.Brush.Color:=clRed;
+  shape3.Brush.Color:=clGreen;
+end;
+//lagrange
+function lagrange(x0:real;x,y:array of real):real;
+     var i,j:integer;
+       p,ans:real;
+             begin
+                  for i:=1 to length(y) do
+                  begin
+                  p:=1;
+                       for j:=1 to length(x) do
+                       begin
+                            if i<>j then
+                            begin
+                            p:=p*(x0-x[j])/(x[i]-x[j]);
+                            end;
+                            end;
+                            ans:=ans+p*y[i];
+                       end;
+                  lagrange:=ans;
+                  end;
+
+ //table
+procedure TForm1.Button1Click(Sender: TObject);
+var inFile: TextFile;
+       par: TStringList;
+         s: string;
+         i,j,k: integer;
+begin
+  opendialog1.InitialDir:=userdir;
+  if opendialog1.execute then
+  begin
+  FName:=opendialog1.FileName;
+  AssignFile(InFile, Fname);
+  if fileexists(fName)then
+  Reset(InFile);
+  Par := TStringList.Create;
+  Par.Clear;
+  Stringgrid1.cells[0,0]:='x';
+  Stringgrid1.cells[1,0]:='y';
+  while not Eof(InFile) do
+  begin
+
+    Readln(InFile, S);
+    ExtractStrings([' '], [' '], PChar(S), Par);
+  end;
+  j:=1;
+  k:=0;
+  closeFile(inFile);
+  StringGrid1.ColCount:=2;
+  StringGrid1.RowCount:=round(Par.count/2)+1;
+  for i:=0 to Par.Count-1 do
+  begin
+
+     if(k=Par.Count) then
+    break;
+    StringGrid1.Cells[0,i+1]:= par.Strings[k];
+    StringGrid1.Cells[1,i+1]:= par.Strings[k+1];
+    k:=k+2;
+  end;
+  end else
+  Showmessage('File'+fName+'does not exist');
+  userdir:=extractFiledir(fName);
+  end;
+
+
+
+//graph
+procedure TForm1.Button2Click(Sender: TObject);
+var i,n:integer;
+begin
+  n:=StringGrid1.rowcount;
+     for i:=1 to n-1 do begin
+       Chart1LineSeries1.AddXY(StrToFloat(StringGrid1.Cells[0,i]),StrToFloat(StringGrid1.Cells[1,i]));
+     end;
+end;
+//smooth
+procedure TForm1.Button3Click(Sender: TObject);
+var
+ x2:array[1..200] of real;
+ y2:array[1..200] of real;
+ x1:array[0..100] of real;
+ y1:array[0..100] of real;
+ i,n,j:integer;
+ iter:real;
+begin
+
+n:=StringGrid1.rowcount;
+for i:=0 to n-2 do
+begin
+x1[i]:= StrToFloat(StringGrid1.Cells[0,i+1]);
+y1[i]:=StrToFloat(StringGrid1.Cells[1,i+1]);
+end;
+iter:=x1[1];
+ for i:=Round(x1[1]) to Round(x1[n-2])  do begin
+
+  y2[i]:= lagrange(i,x1,y1);
+
+    end;
+
+for i:=0 to n-2 do
+begin
+  Chart1LineSeries2.AddXY(x1[i],y2[i]);
+end;
+end;
+//save
+procedure TForm1.Button4Click(Sender: TObject);
+begin
+  if saveDialog1.Execute then
+  begin
+  Fname:=savedialog1.FileName;
+  Fname:=changefileext(Fname,'.bmp') ;
+    Chart1.SaveToBitmapFile(Fname);
+  end;
+
+end;
+//min squares
+procedure TForm1.Button5Click(Sender: TObject);
+var
+ x,y: ARRAY[1..100] of Integer;
+q,w,e,r,t,u,a,b,s:real;
+n,i:integer;
+begin
+ n:=StringGrid1.rowcount;
+     for i:=1 to n-1 do begin
+       x[i]:=StrToInt(StringGrid1.Cells[0,i]);
+     end;
+   For i:=1 to n-1 Do begin
+
+   y[i]:=StrToInt(StringGrid1.Cells[1,i]);
+   end;
+ begin
+ for i:=1 to n do
+ q:=q+n*x[i]*y[i];
+ for i:=1 to n do
+ w:=w+x[i];
+ for i:=1 to n do
+ e:=e+y[i];
+ r:=q-w*e;
+ for i:=1 to n do
+  t:=t+n*sqr(x[i]);
+ for i:=1 to n do
+  u:=u+x[i];
+  u:=sqr(u);
+ for i:=1 to n do
+  a:=r/(t-u);
+ for i:=1 to n do
+  b:=1/n*(e-a*w);
+ end;
+ Edit1.text:=floattostr(a);
+ Edit2.text:=floattostr(b);
+
+ for i:=Round(StrToFloat(StringGrid1.Cells[0,1])) to Round(StrToFloat(StringGrid1.Cells[0,Stringgrid1.rowcount-1]))  do
+ begin
+ Chart1LineSeries3.AddXY(i,a*i+b) ;
+ end;
+end;
+  //clear
+procedure TForm1.Button6Click(Sender: TObject);
+var
+         i: integer;
+begin
+     for i:=1 to Stringgrid1.rowcount-1   do
+         begin
+         Stringgrid1.Cells[0,i]:='0';
+         Stringgrid1.Cells[1,i]:='0';
+         end;
+         Chart1LineSeries3.Clear;
+         Chart1LineSeries2.Clear;
+         Chart1LineSeries1.Clear;
+
+end;
+
+end.
